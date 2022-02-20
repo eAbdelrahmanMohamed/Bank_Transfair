@@ -22,25 +22,25 @@ color:white;}
     </head>
 
   <body>
-      <?php $server="localhost";
+      <?php 
+      session_start();
+      $server="localhost";
 $dbname="Bank";
 $user="root";
 $password="";
-$port=3306;
 $connect=mysqli_connect($server,$user,$password,$dbname);
 if(!$connect){echo "connecttion failed :".mysqli_connect_error();};
 $sql = "SELECT * FROM clients";
   //===================================================================================
-$_COOKIE["from"]="";
   if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   $from=$_POST["fm"];
-  $_COOKIE["from"]=$from;
+  $_SESSION["from"]=$from;
    
     
-    $_COOKIE["to"]=$_POST["to"];
+    $_SESSION["to"]=$_POST["to"];
    
-    $_COOKIE["amount"]=$_POST["mount"];}
+    $_SESSION["amount"]=$_POST["mount"];}
     
 //================================================================================
 $result2 = mysqli_query($connect,$sql);
@@ -52,7 +52,7 @@ if ($result2->num_rows > 0) {
         //===================================================================================
 
 $result = mysqli_query($connect,$sql);
-$row=$r[]=$b[]="";
+
 if ($result->num_rows > 0) {
     while($row= $result->fetch_row()){
     $r[]=$row[1];
@@ -60,59 +60,57 @@ if ($result->num_rows > 0) {
 
 }}
 
-      for($a=0;$a<10;$a++)
+      for($a=0;$a< count($r);$a++)
   {
           
           //اللوب الاولى عشان امشى واحده واحده على الاسماء و اتشوف الاسم الاول  بيساوى اللى دخل ف الكوكيز ولا لأ
-          if($_COOKIE["from"]=== $r[$a])
+          if($_SESSION["from"]=== $r[$a])
             {
               //الشرط التانى عشان اشوف هل بيبعت لنفس الشخص ولا لا من والى نفس الشخص 
-              if($r[$a]===$_COOKIE["to"]){
+              if($r[$a]===$_SESSION["to"]){
                 echo "Error : Transfairng to same account <br>";
                 break;
               }
               //هنا اتأكدت انه مش نفس الشخص و هنا بيقارن الكميه اللى دخلت بحساب الشخص اللى رقمه كذا ول و مش مغطى الحساب 
-            if ($_COOKIE["amount"]>$b[$a]) {
-                echo "sorry ".$r[$a]." cann't cover this amount please enter smaller amount  <br>" ;
+            if ($_SESSION["amount"]>$b[$a]||$_SESSION["amount"]<=0) {
+                echo "sorry ".$r[$a]." cann't cover this amount please enter smaller amount or you entered invaled amount  <br>" ;
                 break;
             }
             //=====================================================================================================
             //هنا كله تمام و الحساب مغطى الكميه و بيبدأ انه يخصم من الحساب و يضيف للحساب التانى
 
             else{ 
-              //$z=0;
-              //while($z<10){
-              for($z=0;$z<10;$z++){ 
-              if ($_COOKIE["to"]=== $r2[$z]){
-             $b2[$z]=$b2[$z]+$_COOKIE["amount"];
+              
+              for($z=0;$z< count($r2);$z++){ 
+              if ($_SESSION["to"]=== $r2[$z]){
+             $b2[$z]=$b2[$z]+$_SESSION["amount"];
           
-               $b[$a]=  $b[$a]-$_COOKIE["amount"];    
+               $b[$a]=  $b[$a]-$_SESSION["amount"];    
+             
               
-              
-             $query="UPDATE clients SET balance=$b[$a] WHERE id=$a";
+             $query="UPDATE clients SET balance=$b[$a] WHERE id=$a+1";
              $query0="UPDATE clients SET balance=$b2[$z] WHERE id=$z+1";
              
       
-          if($connect->query($query0) === true){
-            echo "cond 1 is ture";
-             if ($connect->query($query) === true ){
-              echo "<br>Record updated successfully and 'to' balance is ".$b2[$z]." to ".$r2[$z]."<br>";
+          
+          
+             if ($connect->query($query) === true && $connect->query($query0) === true){
+              echo "Record updated successfully and 'to' balance is ".$b2[$z]." to ".$r2[$z]."<br>";
              echo "balance now for :".$r[$a]." is ".$b[$a]."  and the other to person is  ".$r2[$z]." and his balance ".$b2[$z];
-
-              
+          
+            
             }
              else {
               echo " <br>Error updating record: " . $connect->error;
-            } }
+            } 
 
-            else {
-              echo " <br>Error updating record: " . $connect->error;
-            }}}
+           }}
             
-                         
-//if ($connect->query($q2) === TRUE && $connect->query($query) === TRUE) {
+          // session_unset();
+          // session_destroy();          
+
  
-}}}
+}}   }
 
 
       
@@ -124,10 +122,10 @@ if ($result->num_rows > 0) {
 
 
 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post">
-From  <select name="fm" value="<?php echo $_COOKIE["from"] ?>">
+From  <select name="fm" value="<?php echo $_POST["from"] ?>">
         <?php   
 
-    for($i=1;$i<=12;$i++){
+    for($i=0;$i<count($r);$i++){
       echo 
           "<option> $r[$i]</option>";}
     ?>
@@ -135,9 +133,9 @@ From  <select name="fm" value="<?php echo $_COOKIE["from"] ?>">
 
 <!-- ========================================================================================================== -->
 
- To <select name="to" value="<?php echo $_COOKIE["to"]?>" >
+ To <select name="to" value="<?php echo $_POST["to"]?>" >
  <?php   
-    for($i=0;$i<=12;$i++){
+    for($i=0;$i<count($r2);$i++){
       echo 
           "<option> $r2[$i]</option>";}
 
@@ -148,11 +146,7 @@ Amount <input type="Number" name="mount" value="1000" id="amount">
 </form>
 </body>
 
-<div>
-<?php 
 
-echo $_COOKIE["from"].isset($row[2])."<br><hr>".$_COOKIE["to"]."<br><hr>".$_COOKIE["amount"]."<br><hr>";?>
-</div>
 </html>
 
 
